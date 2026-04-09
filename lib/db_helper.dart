@@ -1,4 +1,3 @@
-// ignore: depend_on_referenced_packages
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'transaction_model.dart';
