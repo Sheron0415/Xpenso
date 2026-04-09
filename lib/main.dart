@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'db_helper.dart';
 import 'transaction_model.dart';
+import 'package:flutter/material.dart';
 
 void main() {
   runApp(MyApp());
 }
+
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -118,9 +121,11 @@ class _DashboardPageState extends State<DashboardPage> {
               elevation: 5,
               child: ListTile(
                 title: Text(
-                    'Income: ${formatCurrency(convertAmount(totalIncome))}'),
+                  'Income: ${formatCurrency(convertAmount(totalIncome))}',
+                ),
                 subtitle: Text(
-                    'Expense: ${formatCurrency(convertAmount(totalExpense))}'),
+                  'Expense: ${formatCurrency(convertAmount(totalExpense))}',
+                ),
                 trailing: Text(
                   'Balance: ${formatCurrency(convertAmount(balance))}',
                   style: TextStyle(fontWeight: FontWeight.bold),
@@ -140,8 +145,9 @@ class _DashboardPageState extends State<DashboardPage> {
                   return Card(
                     child: ListTile(
                       leading: CircleAvatar(
-                        backgroundColor:
-                            t.type == 'Income' ? Colors.green : Colors.red,
+                        backgroundColor: t.type == 'Income'
+                            ? Colors.green
+                            : Colors.red,
                         child: Text(
                           t.type == 'Income' ? '+' : '-',
                           style: TextStyle(color: Colors.white),
@@ -149,7 +155,8 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                       title: Text(t.title),
                       subtitle: Text(
-                          '${DateFormat.yMd().format(t.date)} | ${t.category}'),
+                        '${DateFormat.yMd().format(t.date)} | ${t.category}',
+                      ),
                       trailing: Text(
                         formatCurrency(convertAmount(t.amount)),
                         style: TextStyle(fontWeight: FontWeight.bold),
@@ -183,6 +190,7 @@ class AddTransactionPage extends StatefulWidget {
 
 class _AddTransactionPageState extends State<AddTransactionPage> {
   final _formKey = GlobalKey<FormState>();
+  final _amountController = TextEditingController();
 
   String title = '';
   String category = '';
@@ -190,9 +198,24 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   String type = 'Expense';
   DateTime selectedDate = DateTime.now();
 
+  @override
+  void dispose() {
+    _amountController.dispose();
+    super.dispose();
+  }
+
   void saveTransaction() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
+
+      final parsedAmount = double.tryParse(_amountController.text);
+      if (parsedAmount == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Enter a valid amount')));
+        return;
+      }
+      amount = parsedAmount;
 
       await DBHelper.instance.insertTransaction(
         TransactionModel(
@@ -217,6 +240,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         padding: EdgeInsets.all(16),
         child: Form(
           key: _formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           child: ListView(
             children: [
               TextFormField(
@@ -230,25 +254,25 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 onSaved: (v) => category = v!,
               ),
               TextFormField(
+                controller: _amountController,
                 decoration: InputDecoration(labelText: 'Amount'),
-                keyboardType: TextInputType.number,
-                validator: (v) => v!.isEmpty ? 'Enter amount' : null,
-                onSaved: (v) => amount = double.parse(v!),
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Enter amount';
+                  if (double.tryParse(v) == null) return 'Enter a valid number';
+                  return null;
+                },
               ),
               DropdownButtonFormField(
                 initialValue: type,
                 items: ['Income', 'Expense']
-                    .map((e) => DropdownMenuItem(
-                          value: e,
-                          child: Text(e),
-                        ))
+                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                     .toList(),
                 onChanged: (val) => setState(() => type = val as String),
                 decoration: InputDecoration(labelText: 'Type'),
               ),
               ListTile(
-                title: Text(
-                    'Date: ${DateFormat.yMd().format(selectedDate)}'),
+                title: Text('Date: ${DateFormat.yMd().format(selectedDate)}'),
                 trailing: Icon(Icons.calendar_today),
                 onTap: () async {
                   DateTime? picked = await showDatePicker(
@@ -264,10 +288,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 },
               ),
               SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: saveTransaction,
-                child: Text('Save'),
-              ),
+              ElevatedButton(onPressed: saveTransaction, child: Text('Save')),
             ],
           ),
         ),
