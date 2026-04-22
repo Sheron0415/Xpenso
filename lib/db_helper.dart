@@ -1,4 +1,3 @@
-// ignore: depend_on_referenced_packages
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'transaction_model.dart';
@@ -17,7 +16,12 @@ class DBHelper {
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
-    return await openDatabase(path, version: 1, onCreate: _onCreate);
+
+    return await openDatabase(
+      path,
+      version: 1,
+      onCreate: _onCreate,
+    );
   }
 
   Future _onCreate(Database db, int version) async {
@@ -33,14 +37,54 @@ class DBHelper {
     ''');
   }
 
+  // ================= ADD =================
+
   Future<int> insertTransaction(TransactionModel t) async {
     final db = await database;
-    return await db.insert('transactions', t.toMap());
+    return await db.insert(
+      'transactions',
+      t.toMap(),
+    );
   }
+
+  // ================= READ =================
 
   Future<List<TransactionModel>> getTransactions() async {
     final db = await database;
-    final maps = await db.query('transactions', orderBy: 'date DESC');
-    return maps.map((e) => TransactionModel.fromMap(e)).toList();
+
+    final maps = await db.query(
+      'transactions',
+      orderBy: 'date DESC',
+    );
+
+    return maps
+        .map((e) => TransactionModel.fromMap(e))
+        .toList();
+  }
+
+  // ================= UPDATE =================
+
+  Future<int> updateTransaction(
+      TransactionModel t) async {
+    final db = await database;
+
+    return await db.update(
+      'transactions',
+      t.toMap(),
+      where: 'id = ?',
+      whereArgs: [t.id],
+    );
+  }
+
+  // ================= DELETE =================
+
+  Future<int> deleteTransaction(int id) async {
+    final db = await database;
+
+    return await db.delete(
+      'transactions',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 }
