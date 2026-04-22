@@ -17,15 +17,13 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  bool isDark = false;
+  bool isDark = true;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.light(),
-      darkTheme: ThemeData.dark(),
-      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+      theme: ThemeData.dark(),
       home: DashboardPage(
         onToggleTheme: () {
           setState(() {
@@ -48,7 +46,8 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
+class _DashboardPageState extends State<DashboardPage>
+    with SingleTickerProviderStateMixin {
   List<TransactionModel> transactions = [];
 
   double income = 0;
@@ -57,12 +56,25 @@ class _DashboardPageState extends State<DashboardPage> {
   String currency = "LKR";
   int index = 0;
 
-  static const double rate = 300; // 🔥 1 USD = 300 LKR
+  static const double rate = 300;
+
+  late AnimationController controller;
 
   @override
   void initState() {
     super.initState();
     load();
+
+    controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..forward();
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
   }
 
   Future<void> load() async {
@@ -79,18 +91,10 @@ class _DashboardPageState extends State<DashboardPage> {
     setState(() {});
   }
 
-  double convert(double value) {
-    if (currency == "USD") {
-      return value / rate;
-    }
-    return value;
-  }
-
   String format(double value) {
-    if (currency == "USD") {
-      return "\$${(value / rate).toStringAsFixed(2)}";
-    }
-    return "Rs. ${value.toStringAsFixed(2)}";
+    return currency == "USD"
+        ? "\$${(value / rate).toStringAsFixed(2)}"
+        : "Rs. ${value.toStringAsFixed(2)}";
   }
 
   void delete(int id) async {
@@ -113,15 +117,15 @@ class _DashboardPageState extends State<DashboardPage> {
     double balance = income - expense;
 
     return Scaffold(
+      backgroundColor: const Color(0xff0F172A),
+
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: const Text("Finance Manager"),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: load,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: load),
 
-          // 🔥 Currency Switch FIXED
           DropdownButton<String>(
             value: currency,
             underline: const SizedBox(),
@@ -129,30 +133,32 @@ class _DashboardPageState extends State<DashboardPage> {
               DropdownMenuItem(value: "LKR", child: Text("LKR")),
               DropdownMenuItem(value: "USD", child: Text("USD")),
             ],
-            onChanged: (v) {
-              setState(() => currency = v!);
-            },
+            onChanged: (v) => setState(() => currency = v!),
           ),
 
           IconButton(
-            icon: Icon(Icons.brightness_6),
+            icon: const Icon(Icons.brightness_6),
             onPressed: widget.onToggleTheme,
           ),
         ],
       ),
 
       floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.purple,
         onPressed: () => openForm(),
         child: const Icon(Icons.add),
       ),
 
       bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: const Color(0xff0F172A),
+        selectedItemColor: Colors.purple,
+        unselectedItemColor: Colors.grey,
         currentIndex: index,
         onTap: (i) => setState(() => index = i),
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.pie_chart), label: "Stats"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: ""),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: ""),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: ""),
         ],
       ),
 
@@ -171,45 +177,92 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget home(double balance) {
     return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       children: [
+        AnimatedBuilder(
+          animation: controller,
+          builder: (_, __) {
+            return Transform.scale(
+              scale: controller.value,
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Colors.purple, Colors.blue],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Total Balance",
+                        style: TextStyle(color: Colors.white70)),
+                    const SizedBox(height: 10),
+                    Text(format(balance),
+                        style: const TextStyle(
+                            fontSize: 26,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+
+        const SizedBox(height: 20),
+
         Row(
           children: [
-            Expanded(child: card("Income", income, Colors.green)),
+            Expanded(child: modernCard("Income", income, Colors.green)),
             const SizedBox(width: 10),
-            Expanded(child: card("Expense", expense, Colors.red)),
+            Expanded(child: modernCard("Expense", expense, Colors.red)),
           ],
         ),
-        card("Balance", balance, Colors.blue),
+
+        const SizedBox(height: 20),
+
+        const Text("Recent Transactions",
+            style: TextStyle(color: Colors.white, fontSize: 18)),
 
         const SizedBox(height: 10),
 
         ...transactions.map((t) {
-          return Card(
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xff1E293B),
+              borderRadius: BorderRadius.circular(15),
+            ),
             child: ListTile(
               leading: CircleAvatar(
                 backgroundColor:
                 t.type == "Income" ? Colors.green : Colors.red,
-                child: Text(t.type == "Income" ? "+" : "-"),
+                child: Icon(
+                  t.type == "Income"
+                      ? Icons.arrow_downward
+                      : Icons.arrow_upward,
+                ),
               ),
-              title: Text(t.title),
+              title:
+              Text(t.title, style: const TextStyle(color: Colors.white)),
               subtitle: Text(
-                  "${DateFormat.yMd().format(t.date)} | ${t.category}"),
+                  "${DateFormat.yMd().format(t.date)} • ${t.category}",
+                  style: const TextStyle(color: Colors.white54)),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(format(t.amount)),
-
+                  Text(format(t.amount),
+                      style: TextStyle(
+                          color: t.type == "Income"
+                              ? Colors.green
+                              : Colors.red)),
                   IconButton(
-                    icon: const Icon(Icons.edit),
-                    onPressed: () => openForm(t),
-                  ),
-
+                      icon: const Icon(Icons.edit, color: Colors.white),
+                      onPressed: () => openForm(t)),
                   IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => delete(t.id!),
-                  ),
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => delete(t.id!)),
                 ],
               ),
             ),
@@ -219,110 +272,63 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget card(String title, double value, Color color) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(title,
-                style: TextStyle(
-                    color: color, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text(format(value)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ================= STATS (FIXED + CLEAN) =================
-
-  Widget stats() {
-    double total = income + expense;
-    double expensePercent = total == 0 ? 0 : expense / total;
-
-    return SingleChildScrollView(
+  Widget modernCard(String title, double value, Color color) {
+    return Container(
       padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xff1E293B),
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: Column(
         children: [
-          const Text(
-            "Expense Breakdown",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-
-          const SizedBox(height: 20),
-
-          // 🔥 PIE FIX (REAL WORKING)
-          SizedBox(
-            height: 180,
-            width: 180,
-            child: Stack(
-              children: [
-                Center(
-                  child: SizedBox(
-                    height: 180,
-                    width: 180,
-                    child: CircularProgressIndicator(
-                      value: expensePercent,
-                      strokeWidth: 18,
-                      backgroundColor: Colors.green,
-                      color: Colors.red,
-                    ),
-                  ),
-                ),
-                Center(
-                  child: Text(
-                    "${(expensePercent * 100).toStringAsFixed(1)}%",
-                    style: const TextStyle(fontSize: 18),
-                  ),
-                )
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 30),
-
-          const Text(
-            "Monthly Chart",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-
-          const SizedBox(height: 20),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              bar("Jan", 80),
-              bar("Feb", 120),
-              bar("Mar", 60),
-              bar("Apr", 150),
-              bar("May", 100),
-            ],
-          ),
+          Text(title, style: TextStyle(color: color)),
+          const SizedBox(height: 8),
+          Text(format(value),
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.bold)),
         ],
       ),
     );
   }
 
-  Widget bar(String label, double h) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Container(width: 25, height: h, color: Colors.blue),
-        const SizedBox(height: 5),
-        Text(label),
-      ],
+  // ================= STATS =================
+
+  Widget stats() {
+    double total = income + expense;
+    double percent = total == 0 ? 0 : expense / total;
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text("Expense Ratio",
+              style: TextStyle(color: Colors.white, fontSize: 20)),
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 180,
+            width: 180,
+            child: CircularProgressIndicator(
+              value: percent,
+              strokeWidth: 20,
+              backgroundColor: Colors.green,
+              color: Colors.red,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text("${(percent * 100).toStringAsFixed(1)}%",
+              style: const TextStyle(color: Colors.white)),
+        ],
+      ),
     );
   }
 
   Widget profile() {
-    return const Center(child: Text("Profile"));
+    return const Center(
+        child: Text("Profile", style: TextStyle(color: Colors.white)));
   }
 }
 
-// ================= ADD / EDIT =================
+// ================= ADD PAGE =================
 
 class AddPage extends StatefulWidget {
   final TransactionModel? transaction;
@@ -370,75 +376,33 @@ class _AddPageState extends State<AddPage> {
       await DBHelper.instance.updateTransaction(data);
     }
 
-    // ignore: use_build_context_synchronously
     Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.transaction == null ? "Add Transaction" : "Edit Transaction"),
-      ),
-
+      appBar: AppBar(title: const Text("Add Transaction")),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            TextField(controller: title, decoration: const InputDecoration(labelText: "Title")),
+            TextField(controller: category, decoration: const InputDecoration(labelText: "Category")),
+            TextField(controller: amount, keyboardType: TextInputType.number),
 
-            TextField(
-              controller: title,
-              decoration: const InputDecoration(
-                labelText: "Title",
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            TextField(
-              controller: category,
-              decoration: const InputDecoration(
-                labelText: "Category",
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            TextField(
-              controller: amount,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: "Amount",
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            DropdownButtonFormField<String>(
-              initialValue: type,
+            DropdownButtonFormField(
+              value: type,
               items: const [
                 DropdownMenuItem(value: "Income", child: Text("Income")),
                 DropdownMenuItem(value: "Expense", child: Text("Expense")),
               ],
               onChanged: (v) => setState(() => type = v!),
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: "Type",
-              ),
             ),
 
-            const SizedBox(height: 12),
-
             ListTile(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-                side: const BorderSide(color: Colors.grey),
-              ),
-              title: Text("Date: ${date.toString().split(" ")[0]}"),
-              trailing: const Icon(Icons.calendar_month),
+              title: Text(DateFormat.yMd().format(date)),
+              trailing: const Icon(Icons.calendar_today),
               onTap: () async {
                 final picked = await showDatePicker(
                   context: context,
@@ -446,22 +410,11 @@ class _AddPageState extends State<AddPage> {
                   firstDate: DateTime(2020),
                   lastDate: DateTime(2100),
                 );
-
-                if (picked != null) {
-                  setState(() => date = picked);
-                }
+                if (picked != null) setState(() => date = picked);
               },
             ),
 
-            const SizedBox(height: 20),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: save,
-                child: const Text("SAVE"),
-              ),
-            ),
+            ElevatedButton(onPressed: save, child: const Text("Save")),
           ],
         ),
       ),
