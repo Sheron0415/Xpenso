@@ -135,9 +135,7 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
 
           IconButton(
-            icon: Icon(widget.onToggleTheme == null
-                ? Icons.dark_mode
-                : Icons.brightness_6),
+            icon: Icon(Icons.brightness_6),
             onPressed: widget.onToggleTheme,
           ),
         ],
@@ -372,6 +370,7 @@ class _AddPageState extends State<AddPage> {
       await DBHelper.instance.updateTransaction(data);
     }
 
+    // ignore: use_build_context_synchronously
     Navigator.pop(context);
   }
 
@@ -419,7 +418,7 @@ class _AddPageState extends State<AddPage> {
             const SizedBox(height: 12),
 
             DropdownButtonFormField<String>(
-              value: type,
+              initialValue: type,
               items: const [
                 DropdownMenuItem(value: "Income", child: Text("Income")),
                 DropdownMenuItem(value: "Expense", child: Text("Expense")),
