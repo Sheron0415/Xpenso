@@ -37,7 +37,7 @@ class DBHelper {
     ''');
   }
 
-  // ================= ADD =================
+
 
   Future<int> insertTransaction(TransactionModel t) async {
     final db = await database;
@@ -47,7 +47,6 @@ class DBHelper {
     );
   }
 
-  // ================= READ =================
 
   Future<List<TransactionModel>> getTransactions() async {
     final db = await database;
@@ -62,7 +61,6 @@ class DBHelper {
         .toList();
   }
 
-  // ================= UPDATE =================
 
   Future<int> updateTransaction(
       TransactionModel t) async {
@@ -76,7 +74,7 @@ class DBHelper {
     );
   }
 
-  // ================= DELETE =================
+
 
   Future<int> deleteTransaction(int id) async {
     final db = await database;

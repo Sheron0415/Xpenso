@@ -15,7 +15,7 @@ class TransactionModel {
     required this.date,
   });
 
-  // ================= TO MAP =================
+
 
   Map<String, dynamic> toMap() {
     return {
@@ -28,7 +28,6 @@ class TransactionModel {
     };
   }
 
-  // ================= FROM MAP =================
 
   factory TransactionModel.fromMap(
       Map<String, dynamic> map) {
@@ -44,7 +43,7 @@ class TransactionModel {
     );
   }
 
-  // ================= COPY FOR EDIT =================
+
 
   TransactionModel copyWith({
     int? id,
