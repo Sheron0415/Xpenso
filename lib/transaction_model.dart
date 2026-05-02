@@ -3,7 +3,7 @@ class TransactionModel {
   String title;
   String category;
   double amount;
-  String type; // Income or Expense
+  String type;
   DateTime date;
 
   TransactionModel({
@@ -14,6 +14,8 @@ class TransactionModel {
     required this.type,
     required this.date,
   });
+
+
 
   Map<String, dynamic> toMap() {
     return {
@@ -26,14 +28,38 @@ class TransactionModel {
     };
   }
 
-  factory TransactionModel.fromMap(Map<String, dynamic> map) {
+
+  factory TransactionModel.fromMap(
+      Map<String, dynamic> map) {
     return TransactionModel(
       id: map['id'],
       title: map['title'],
       category: map['category'],
-      amount: map['amount'],
+      amount: map['amount'] is int
+          ? (map['amount'] as int).toDouble()
+          : map['amount'],
       type: map['type'],
       date: DateTime.parse(map['date']),
+    );
+  }
+
+
+
+  TransactionModel copyWith({
+    int? id,
+    String? title,
+    String? category,
+    double? amount,
+    String? type,
+    DateTime? date,
+  }) {
+    return TransactionModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      category: category ?? this.category,
+      amount: amount ?? this.amount,
+      type: type ?? this.type,
+      date: date ?? this.date,
     );
   }
 }
