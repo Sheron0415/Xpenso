@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
 
 class SplashScreen extends StatefulWidget {
   final Widget nextScreen;
@@ -22,13 +21,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(_controller);
     _controller.forward();
-
-    Timer(const Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => widget.nextScreen),
-      );
-    });
   }
 
   @override
